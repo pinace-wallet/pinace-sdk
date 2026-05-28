@@ -6,7 +6,7 @@
  * `pinace.propose_and_settle` and `pinace.get_pool_summary` as native tools.
  */
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { SuiGrpcClient } from '@mysten/sui/grpc';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { PinaceAgent } from '@pinace/agent-sdk';
 
@@ -24,7 +24,10 @@ async function main(): Promise<void> {
   const poolId = readEnv('PINACE_POOL_ID');
   const network = (process.env.SUI_NETWORK ?? 'mainnet') as 'mainnet' | 'testnet' | 'devnet';
 
-  const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+  const suiClient = new SuiGrpcClient({
+    network,
+    baseUrl: process.env.SUI_RPC_URL ?? `https://fullnode.${network}.sui.io:443`,
+  });
   const signer = Ed25519Keypair.fromSecretKey(agentSecret);
 
   const agent = new PinaceAgent({

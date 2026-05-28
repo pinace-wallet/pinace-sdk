@@ -1,4 +1,4 @@
-import type { SuiClient } from '@mysten/sui/client';
+import type { SuiGrpcClient } from '@mysten/sui/grpc';
 import type { Signer } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 import { type ActionKind, buildProposeAction, buildSettleAction } from '@pinace/core';
@@ -9,7 +9,7 @@ import { type ActionKind, buildProposeAction, buildSettleAction } from '@pinace/
  * {@link PinaceAgent} instead.
  */
 export async function executeAtomicAction(args: {
-  suiClient: SuiClient;
+  suiClient: SuiGrpcClient;
   signer: Signer;
   packageId: string;
   poolId: string;
@@ -52,6 +52,6 @@ export async function executeAtomicAction(args: {
   return args.suiClient.signAndExecuteTransaction({
     signer: args.signer,
     transaction: tx,
-    options: { showEffects: true, showEvents: true, showObjectChanges: true },
+    include: { effects: true, events: true, objectTypes: true },
   });
 }

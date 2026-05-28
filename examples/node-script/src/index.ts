@@ -10,23 +10,21 @@
  *   6. Owner: revoke and confirm next agent action reverts
  */
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { SuiGrpcClient } from '@mysten/sui/grpc';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
-import {
-  buildAttachAgent,
-  buildCreatePool,
-  buildDeposit,
-  PinaceClient,
-  policies,
-} from '@pinace/core';
+import { buildAttachAgent, buildCreatePool, buildDeposit, PinaceClient } from '@pinace/core';
+import * as policies from '@pinace/core/policies';
 import { PinaceAgent } from '@pinace/agent-sdk';
 
 const packageId = process.env.PINACE_PACKAGE_ID ?? '0x0';
 const network = (process.env.SUI_NETWORK ?? 'testnet') as 'mainnet' | 'testnet' | 'devnet';
 
 async function main(): Promise<void> {
-  const suiClient = new SuiClient({ url: getFullnodeUrl(network) });
+  const suiClient = new SuiGrpcClient({
+    network,
+    baseUrl: process.env.SUI_RPC_URL ?? `https://fullnode.${network}.sui.io:443`,
+  });
   const owner = Ed25519Keypair.generate();
   const agent = Ed25519Keypair.generate();
 

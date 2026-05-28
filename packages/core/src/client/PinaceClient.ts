@@ -1,10 +1,13 @@
-import type { SuiClient } from '@mysten/sui/client';
+import type { SuiGrpcClient } from '@mysten/sui/grpc';
 import type { BalancePool, BalancePoolSummary } from '../types/balance-pool.js';
 import type { Delegation } from '../types/delegation.js';
 
 export interface PinaceClientConfig {
-  /** Underlying Sui RPC client. */
-  suiClient: SuiClient;
+  /**
+   * Underlying Sui client. Defaults to `SuiGrpcClient` — the recommended transport
+   * in `@mysten/sui` v2.x (JSON-RPC is deprecated and decommissions 2026-07-31).
+   */
+  suiClient: SuiGrpcClient;
   /** Deployed package id of the `core` Move package on the target network. */
   packageId: string;
 }
@@ -16,7 +19,7 @@ export interface PinaceClientConfig {
  * map roughly 1:1 to the view requirements of the wallet UI and indexer.
  */
 export class PinaceClient {
-  readonly suiClient: SuiClient;
+  readonly suiClient: SuiGrpcClient;
   readonly packageId: string;
 
   constructor(config: PinaceClientConfig) {

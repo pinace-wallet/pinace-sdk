@@ -1,4 +1,4 @@
-import type { SuiClient } from '@mysten/sui/client';
+import type { SuiGrpcClient } from '@mysten/sui/grpc';
 import type { Signer } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 import { ActionKind, buildProposeAction, buildSettleAction, PinaceClient } from '@pinace/core';
@@ -7,7 +7,7 @@ import * as policies from '@pinace/core/policies';
 export type PolicyName = 'spendingLimit' | 'tokenWhitelist' | 'slippageGuard' | 'timeWindow';
 
 export interface PinaceAgentConfig {
-  suiClient: SuiClient;
+  suiClient: SuiGrpcClient;
   signer: Signer;
   packageId: string;
   poolId: string;
@@ -34,7 +34,7 @@ export interface ProposeAndSettleArgs {
  * don't have to assemble it by hand.
  */
 export class PinaceAgent {
-  readonly suiClient: SuiClient;
+  readonly suiClient: SuiGrpcClient;
   readonly signer: Signer;
   readonly packageId: string;
   readonly poolId: string;
@@ -83,7 +83,7 @@ export class PinaceAgent {
     return this.suiClient.signAndExecuteTransaction({
       signer: this.signer,
       transaction: tx,
-      options: { showEffects: true, showEvents: true, showObjectChanges: true },
+      include: { effects: true, events: true, objectTypes: true },
     });
   }
 }
