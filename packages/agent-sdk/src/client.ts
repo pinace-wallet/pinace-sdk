@@ -1,11 +1,7 @@
 import type { SuiClient } from '@mysten/sui/client';
 import type { Signer } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
-import {
-  ActionKind,
-  buildProposeAction,
-  buildSettleAction,
-} from '@pinace/core';
+import { type ActionKind, buildProposeAction, buildSettleAction } from '@pinace/core';
 
 /**
  * Low-level helper for callers who want full control over which policy `prove` calls
