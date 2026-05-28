@@ -1,9 +1,7 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:  # manual trigger only — reactivate auto-on-push when ready to publish v0.0.1
 
 concurrency: release-${{ github.ref }}
 
