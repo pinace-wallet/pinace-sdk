@@ -23,7 +23,7 @@ export interface ProposeAndSettleArgs {
   deadlineMs: bigint;
   routeHash?: Uint8Array;
   memo?: string;
-  /** Names of policies to call `prove` on inside the PTB. Order matters only if policies have side effects. */
+  /** Names of policies the agent's delegation has attached. Each one's `prove` call gets inserted between propose and settle. */
   policies: PolicyName[];
 }
 
@@ -58,14 +58,13 @@ export class PinaceAgent {
   async proposeAndSettle(args: ProposeAndSettleArgs) {
     const tx = new Transaction();
 
-    const kind = mapKind(args.kind);
     const request = buildProposeAction({
       tx,
       packageId: this.packageId,
       poolId: this.poolId,
       coinInType: args.coinIn,
       coinOutType: args.coinOut,
-      kind,
+      kind: mapKind(args.kind),
       amountIn: args.amountIn,
       quotedAmountOut: args.quotedAmountOut,
       minAmountOut: args.minAmountOut,

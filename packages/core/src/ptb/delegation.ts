@@ -2,9 +2,11 @@ import type { Transaction } from '@mysten/sui/transactions';
 import { PinaceModules } from '../constants.js';
 
 /**
- * Attach an agent to a pool with an optional expiry (Unix ms; 0 = no expiry).
+ * Connect an agent to a pool with an optional expiry (Unix ms; 0 = no expiry).
+ *
+ * Wraps `core::balance_pool::connect_agent`.
  */
-export function buildAttachAgent(args: {
+export function buildConnectAgent(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
@@ -13,7 +15,7 @@ export function buildAttachAgent(args: {
   clockId?: string;
 }): Transaction {
   args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::attach_agent`,
+    target: `${args.packageId}::${PinaceModules.BalancePool}::connect_agent`,
     arguments: [
       args.tx.object(args.poolId),
       args.tx.pure.address(args.agent),
@@ -26,6 +28,8 @@ export function buildAttachAgent(args: {
 
 /**
  * Revoke the agent's delegation. Subsequent `propose_action` calls from the agent abort.
+ *
+ * Wraps `core::balance_pool::revoke_agent`.
  */
 export function buildRevokeAgent(args: {
   tx: Transaction;

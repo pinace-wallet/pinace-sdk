@@ -1,4 +1,4 @@
-import type { Transaction } from '@mysten/sui/transactions';
+import type { Transaction, TransactionObjectArgument } from '@mysten/sui/transactions';
 import { PinaceModules } from '../constants.js';
 
 /**
@@ -30,12 +30,15 @@ export function buildDeposit(args: {
   packageId: string;
   poolId: string;
   coinType: string;
-  coinArg: ReturnType<Transaction['object']> | ReturnType<Transaction['splitCoins']>;
+  /** Coin to escrow — either an object id string, an `object()` arg, or a `splitCoins()[i]` result. */
+  coinArg: TransactionObjectArgument | string;
 }): Transaction {
+  const coin =
+    typeof args.coinArg === 'string' ? args.tx.object(args.coinArg) : args.coinArg;
   args.tx.moveCall({
     target: `${args.packageId}::${PinaceModules.BalancePool}::deposit`,
     typeArguments: [args.coinType],
-    arguments: [args.tx.object(args.poolId), args.coinArg as never],
+    arguments: [args.tx.object(args.poolId), coin],
   });
   return args.tx;
 }

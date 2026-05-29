@@ -1,44 +1,52 @@
-import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
+import type { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
 
-/** Helpers for `core::policies::time_window_policy`. */
+/** Helpers for `core::time_window_policy`. */
+
+export const moduleName = 'time_window_policy';
+export const witnessName = 'Witness';
+export const configName = 'Config';
+
+export function witnessType(packageId: string): string {
+  return `${packageId}::${moduleName}::${witnessName}`;
+}
+
+export function configType(packageId: string): string {
+  return `${packageId}::${moduleName}::${configName}`;
+}
 
 export interface TimeWindowConfig {
-  /** Allowed start hour (0-23, UTC). */
-  startHourUtc: number;
-  /** Allowed end hour (0-23, UTC, exclusive). */
-  endHourUtc: number;
+  /** Window start (Unix ms). */
+  startMs: bigint | number | string;
+  /** Window end (Unix ms, exclusive). */
+  endMs: bigint | number | string;
 }
 
-export function buildAttach(args: {
+/**
+ * `time_window_policy::new_config(start_ms, end_ms)`.
+ */
+export function buildNewConfig(args: {
   tx: Transaction;
   packageId: string;
-  poolId: string;
-  agent: string;
   config: TimeWindowConfig;
-  marketplaceId?: Uint8Array;
-}): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::time_window_policy::attach`,
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.address(args.agent),
-      args.tx.pure.u8(args.config.startHourUtc),
-      args.tx.pure.u8(args.config.endHourUtc),
-      args.tx.pure.vector('u8', Array.from(args.marketplaceId ?? new Uint8Array())),
-    ],
+}): TransactionResult {
+  return args.tx.moveCall({
+    target: `${args.packageId}::${moduleName}::new_config`,
+    arguments: [args.tx.pure.u64(args.config.startMs), args.tx.pure.u64(args.config.endMs)],
   });
-  return args.tx;
 }
 
+/**
+ * `time_window_policy::prove(pool: &BalancePool, request: &mut Request, clock: &Clock)`.
+ */
 export function buildProve(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
-  request: TransactionResult;
+  request: TransactionArgument | TransactionResult;
   clockId?: string;
 }): Transaction {
   args.tx.moveCall({
-    target: `${args.packageId}::time_window_policy::prove`,
+    target: `${args.packageId}::${moduleName}::prove`,
     arguments: [args.tx.object(args.poolId), args.request, args.tx.object(args.clockId ?? '0x6')],
   });
   return args.tx;

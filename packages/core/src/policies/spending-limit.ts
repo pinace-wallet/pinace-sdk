@@ -1,13 +1,31 @@
-import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
+import type { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
 
 /**
- * Helpers for `core::policies::spending_limit_policy`.
+ * Helpers for `core::spending_limit_policy`.
  *
- * Two responsibilities:
- *   1. **Owner side** — `attach` to bind the policy with a max per-tx + per-window amount.
- *   2. **Agent side** — `prove` inside the same PTB that calls `propose_action`, so the
- *      hot-potato `Request` carries the spending-limit receipt before `settle_action`.
+ * Module path: `${packageId}::spending_limit_policy`
+ * Witness type: `${packageId}::spending_limit_policy::Witness`
+ * Config type:  `${packageId}::spending_limit_policy::Config`
+ *
+ * Owner flow:
+ *   1. `buildNewConfig(...)` to construct the Config value
+ *   2. Pass that result + the type names into `buildAttachPolicy({witnessType, configType, configArg})`
+ *
+ * Agent flow:
+ *   - Call `buildProve(...)` between `propose_action` and `settle_action`.
  */
+
+export const moduleName = 'spending_limit_policy';
+export const witnessName = 'Witness';
+export const configName = 'Config';
+
+export function witnessType(packageId: string): string {
+  return `${packageId}::${moduleName}::${witnessName}`;
+}
+
+export function configType(packageId: string): string {
+  return `${packageId}::${moduleName}::${configName}`;
+}
 
 export interface SpendingLimitConfig {
   /** Max amount per single action (in coin's smallest unit). */
@@ -18,37 +36,40 @@ export interface SpendingLimitConfig {
   windowMs: bigint | number | string;
 }
 
-export function buildAttach(args: {
+/**
+ * Construct the `Config` struct via `spending_limit_policy::new_config(...)`.
+ *
+ * The returned argument is meant to be passed to `buildAttachPolicy({ configArg, ... })`.
+ */
+export function buildNewConfig(args: {
   tx: Transaction;
   packageId: string;
-  poolId: string;
-  agent: string;
   config: SpendingLimitConfig;
-  marketplaceId?: Uint8Array;
-}): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::spending_limit_policy::attach`,
+}): TransactionResult {
+  return args.tx.moveCall({
+    target: `${args.packageId}::${moduleName}::new_config`,
     arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.address(args.agent),
       args.tx.pure.u64(args.config.maxPerTx),
       args.tx.pure.u64(args.config.maxPerWindow),
       args.tx.pure.u64(args.config.windowMs),
-      args.tx.pure.vector('u8', Array.from(args.marketplaceId ?? new Uint8Array())),
     ],
   });
-  return args.tx;
 }
 
+/**
+ * `spending_limit_policy::prove(pool: &mut BalancePool, request: &mut Request, clock: &Clock)`.
+ *
+ * Call between propose_action and settle_action to attach this policy's receipt.
+ */
 export function buildProve(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
-  request: TransactionResult;
+  request: TransactionArgument | TransactionResult;
   clockId?: string;
 }): Transaction {
   args.tx.moveCall({
-    target: `${args.packageId}::spending_limit_policy::prove`,
+    target: `${args.packageId}::${moduleName}::prove`,
     arguments: [args.tx.object(args.poolId), args.request, args.tx.object(args.clockId ?? '0x6')],
   });
   return args.tx;

@@ -1,6 +1,5 @@
 import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
-import type { ActionKind } from '../constants.js';
-import { PinaceModules } from '../constants.js';
+import { type ActionKind, PinaceModules } from '../constants.js';
 
 /**
  * Begin the hot-potato flow: `balance_pool::propose_action` returns a `Request` object
@@ -44,16 +43,19 @@ export function buildProposeAction(args: {
 /**
  * Close the hot-potato flow. The `request` argument must be the result of
  * `buildProposeAction` (post any policy `prove` calls that added receipts).
+ *
+ * Wraps `core::balance_pool::settle_action(pool, request, clock, ctx)`.
  */
 export function buildSettleAction(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
   request: TransactionResult;
+  clockId?: string;
 }): Transaction {
   args.tx.moveCall({
     target: `${args.packageId}::${PinaceModules.BalancePool}::settle_action`,
-    arguments: [args.tx.object(args.poolId), args.request],
+    arguments: [args.tx.object(args.poolId), args.request, args.tx.object(args.clockId ?? '0x6')],
   });
   return args.tx;
 }

@@ -1,40 +1,49 @@
-import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
+import type { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
 
-/** Helpers for `core::policies::slippage_guard_policy`. */
+/** Helpers for `core::slippage_guard_policy`. */
+
+export const moduleName = 'slippage_guard_policy';
+export const witnessName = 'Witness';
+export const configName = 'Config';
+
+export function witnessType(packageId: string): string {
+  return `${packageId}::${moduleName}::${witnessName}`;
+}
+
+export function configType(packageId: string): string {
+  return `${packageId}::${moduleName}::${configName}`;
+}
 
 export interface SlippageGuardConfig {
   /** Max acceptable slippage in basis points (1 bp = 0.01%). */
-  maxSlippageBps: number;
+  maxSlippageBps: bigint | number | string;
 }
 
-export function buildAttach(args: {
+/**
+ * `slippage_guard_policy::new_config(max_slippage_bps)`.
+ */
+export function buildNewConfig(args: {
   tx: Transaction;
   packageId: string;
-  poolId: string;
-  agent: string;
   config: SlippageGuardConfig;
-  marketplaceId?: Uint8Array;
-}): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::slippage_guard_policy::attach`,
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.address(args.agent),
-      args.tx.pure.u64(args.config.maxSlippageBps),
-      args.tx.pure.vector('u8', Array.from(args.marketplaceId ?? new Uint8Array())),
-    ],
+}): TransactionResult {
+  return args.tx.moveCall({
+    target: `${args.packageId}::${moduleName}::new_config`,
+    arguments: [args.tx.pure.u64(args.config.maxSlippageBps)],
   });
-  return args.tx;
 }
 
+/**
+ * `slippage_guard_policy::prove(pool: &BalancePool, request: &mut Request)`.
+ */
 export function buildProve(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
-  request: TransactionResult;
+  request: TransactionArgument | TransactionResult;
 }): Transaction {
   args.tx.moveCall({
-    target: `${args.packageId}::slippage_guard_policy::prove`,
+    target: `${args.packageId}::${moduleName}::prove`,
     arguments: [args.tx.object(args.poolId), args.request],
   });
   return args.tx;

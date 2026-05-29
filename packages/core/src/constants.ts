@@ -46,11 +46,15 @@ export const ActionLimits = {
 } as const;
 
 /**
- * Placeholder package ID — replace with the actual deployed package ID per network.
- *
- * Override at runtime via `PinaceClient` config or `setPackageId()`.
+ * Deployed `core` package IDs per network. Pass into `PinaceClient` config.
  */
-export const DEFAULT_PACKAGE_ID = '0x0';
+export const PACKAGE_IDS = {
+  testnet: '0x8f7acde213fb19211b0dcd3a6527a4847d2f3631d90267880dd198291ab70fdf',
+  mainnet: '0x0', // not deployed yet
+} as const;
+
+/** Convenience default. Use `PACKAGE_IDS.testnet` or `PACKAGE_IDS.mainnet` explicitly in production code. */
+export const DEFAULT_PACKAGE_ID = PACKAGE_IDS.testnet;
 
 /**
  * Move module fully-qualified names for common targets.
