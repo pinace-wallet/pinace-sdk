@@ -38,20 +38,23 @@ export class PinaceClient {
   async getPool(poolId: string): Promise<BalancePool> {
     const { object } = await this.suiClient.core.getObject({ objectId: poolId });
 
-    const content = (object as unknown as { content?: { fields?: Record<string, unknown> } })
-      .content;
-    const fields = content?.fields;
-    if (!fields) {
-      throw new Error(`Pool ${poolId} has no content fields — wrong object type?`);
+    const raw = object as unknown as { type?: string };
+    const expectedSuffix = '::balance_pool::BalancePool';
+    if (!raw.type?.endsWith(expectedSuffix)) {
+      throw new Error(`Object ${poolId} is not a BalancePool (got type=${raw.type})`);
     }
 
+    // V1: gRPC `core.getObject` returns `content` as BCS-encoded bytes (opt-in via
+    // `include: { content: true }`). We don't unpack them yet — owner / status /
+    // nonce will come from the indexer in V2. Surface what the bare object header
+    // already gives us: type confirmation + id.
     return {
       id: poolId,
-      owner: String(fields.owner),
-      status: Number(fields.status) as PoolStatus,
-      nextNonce: BigInt(String(fields.next_nonce ?? '0')),
-      generation: BigInt(String(fields.generation ?? '0')),
-      balances: new Map(), // populated by indexer or dynamic-field walk
+      owner: '',
+      status: 0 as PoolStatus,
+      nextNonce: 0n,
+      generation: 0n,
+      balances: new Map(),
       delegations: new Map(),
     };
   }

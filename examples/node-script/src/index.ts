@@ -33,6 +33,7 @@ import {
   buildSettleAction,
   PACKAGE_IDS,
   PinaceClient,
+  POLICY_REGISTRATION_IDS,
 } from '@pinace/core';
 import * as policies from '@pinace/core/policies';
 
@@ -63,6 +64,21 @@ async function main(): Promise<void> {
   console.log(`Owner:   ${owner.toSuiAddress()}`);
   console.log(`Agent:   ${agent.toSuiAddress()}`);
 
+  // ── 0. Top up agent with gas ──────────────────────────────────────────────
+  console.log('\n[0] Topping up agent with 0.05 SUI for gas…');
+  const topupTx = new Transaction();
+  const [gasCoin] = topupTx.splitCoins(topupTx.gas, [topupTx.pure.u64(50_000_000n)]);
+  topupTx.transferObjects([gasCoin], topupTx.pure.address(agent.toSuiAddress()));
+  const topupRes = await suiClient.signAndExecuteTransaction({
+    signer: owner,
+    transaction: topupTx,
+    include: { effects: true },
+  });
+  await suiClient.waitForTransaction({
+    digest: topupRes.$kind === 'Transaction' ? topupRes.Transaction.digest : '',
+  });
+  console.log('    Agent funded.');
+
   // ── 1. Create pool ────────────────────────────────────────────────────────
   console.log('\n[1] Creating pool…');
   const createTx = new Transaction();
@@ -72,6 +88,8 @@ async function main(): Promise<void> {
     transaction: createTx,
     include: { effects: true, events: true, objectTypes: true },
   });
+  const createDigest = createResult.$kind === 'Transaction' ? createResult.Transaction.digest : '';
+  await suiClient.waitForTransaction({ digest: createDigest });
   const poolId = findCreatedPoolId(createResult);
   console.log(`    Pool created: ${poolId}`);
 
@@ -79,17 +97,19 @@ async function main(): Promise<void> {
   console.log('\n[2] Depositing 0.05 SUI into pool…');
   const depositTx = new Transaction();
   const [coin] = depositTx.splitCoins(depositTx.gas, [depositTx.pure.u64(50_000_000n)]);
-  buildDeposit({
-    tx: depositTx,
-    packageId,
-    poolId,
-    coinType: SUI,
-    coinArg: coin,
-  });
-  await suiClient.signAndExecuteTransaction({
+  const depositRes = await suiClient.signAndExecuteTransaction({
     signer: owner,
-    transaction: depositTx,
+    transaction: buildDeposit({
+      tx: depositTx,
+      packageId,
+      poolId,
+      coinType: SUI,
+      coinArg: coin,
+    }),
     include: { effects: true },
+  });
+  await suiClient.waitForTransaction({
+    digest: depositRes.$kind === 'Transaction' ? depositRes.Transaction.digest : '',
   });
   console.log('    Deposit ok.');
 
@@ -117,7 +137,10 @@ async function main(): Promise<void> {
     agent: agent.toSuiAddress(),
     witnessType: policies.spendingLimit.witnessType(packageId),
     configType: policies.spendingLimit.configType(packageId),
+    registrationId: POLICY_REGISTRATION_IDS.testnet.spendingLimit,
     configArg: slConfig,
+    configHash: new TextEncoder().encode('e2e-sl'),
+    marketplaceId: new TextEncoder().encode('local'),
   });
 
   // Token whitelist: SUI → SUI (generic placeholder)
@@ -134,13 +157,19 @@ async function main(): Promise<void> {
     agent: agent.toSuiAddress(),
     witnessType: policies.tokenWhitelist.witnessType(packageId),
     configType: policies.tokenWhitelist.configType(packageId),
+    registrationId: POLICY_REGISTRATION_IDS.testnet.tokenWhitelist,
     configArg: twConfig,
+    configHash: new TextEncoder().encode('e2e-tw'),
+    marketplaceId: new TextEncoder().encode('local'),
   });
 
-  await suiClient.signAndExecuteTransaction({
+  const setupRes = await suiClient.signAndExecuteTransaction({
     signer: owner,
     transaction: setupTx,
     include: { effects: true, events: true },
+  });
+  await suiClient.waitForTransaction({
+    digest: setupRes.$kind === 'Transaction' ? setupRes.Transaction.digest : '',
   });
   console.log('    Agent connected + 2 policies attached.');
 
@@ -172,6 +201,7 @@ async function main(): Promise<void> {
   });
   const digest =
     actionResult.$kind === 'Transaction' ? actionResult.Transaction.digest : '(failed)';
+  await suiClient.waitForTransaction({ digest });
   console.log(`    Action settled. Digest: ${digest}`);
 
   // ── 6. Revoke and prove next action fails ─────────────────────────────────
@@ -184,10 +214,13 @@ async function main(): Promise<void> {
     agent: agent.toSuiAddress(),
     reason: new TextEncoder().encode('e2e test revoke'),
   });
-  await suiClient.signAndExecuteTransaction({
+  const revokeRes = await suiClient.signAndExecuteTransaction({
     signer: owner,
     transaction: revokeTx,
     include: { effects: true, events: true },
+  });
+  await suiClient.waitForTransaction({
+    digest: revokeRes.$kind === 'Transaction' ? revokeRes.Transaction.digest : '',
   });
   console.log('    Revoked.');
 
@@ -229,15 +262,28 @@ async function main(): Promise<void> {
 }
 
 function findCreatedPoolId(result: unknown): string {
-  type ObjectChange = { type: string; objectType?: string; objectId?: string };
-  const r = result as { objectChanges?: ObjectChange[] };
-  const created = (r.objectChanges ?? []).find(
-    (c) => c.type === 'created' && c.objectType?.endsWith('::balance_pool::BalancePool'),
-  );
-  if (!created?.objectId) {
-    throw new Error('Could not find BalancePool in objectChanges — was include.objectTypes set?');
+  type Event = { eventType: string; json: { pool_id?: string } | null };
+  type ObjectTypesMap = Record<string, string>;
+  const r = result as {
+    $kind?: string;
+    Transaction?: { events?: Event[]; objectTypes?: ObjectTypesMap };
+  };
+  if (r.$kind !== 'Transaction' || !r.Transaction) {
+    throw new Error('Pool create tx failed — no Transaction result');
   }
-  return created.objectId;
+
+  // Prefer the PoolCreatedEvent for an explicit pool_id field.
+  const event = (r.Transaction.events ?? []).find((e) =>
+    e.eventType.endsWith('::events::PoolCreatedEvent'),
+  );
+  const fromEvent = event?.json?.pool_id;
+  if (fromEvent) return fromEvent;
+
+  // Fallback: walk objectTypes for the BalancePool object type.
+  for (const [id, type] of Object.entries(r.Transaction.objectTypes ?? {})) {
+    if (type.endsWith('::balance_pool::BalancePool')) return id;
+  }
+  throw new Error('Could not find BalancePool in events or objectTypes');
 }
 
 main().catch((err) => {

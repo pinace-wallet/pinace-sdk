@@ -7,8 +7,9 @@ import { PinaceModules } from '../constants.js';
  * Each policy module exposes its own `Witness` type + `Config` type. To attach a
  * policy you:
  *   1. Build a `Config` value (typically via `<policy>::new_config(...)` Move call).
- *   2. Call this helper with the witness type-arg, config type-arg, and the config
- *      `TransactionArgument` produced by step 1.
+ *   2. Call this helper with the witness type-arg, config type-arg, the matching
+ *      `PolicyRegistration<Witness>` shared object id (gating which policies the
+ *      protocol trusts), and the config `TransactionArgument` produced by step 1.
  *
  * `configHash` and `marketplaceId` are off-chain metadata stored verbatim; pass empty
  * vectors when you don't have a marketplace listing yet.
@@ -17,6 +18,7 @@ export function buildAttachPolicy(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
+  registrationId: string;
   agent: string;
   witnessType: string;
   configType: string;
@@ -30,6 +32,7 @@ export function buildAttachPolicy(args: {
     typeArguments: [args.witnessType, args.configType],
     arguments: [
       args.tx.object(args.poolId),
+      args.tx.object(args.registrationId),
       args.tx.pure.address(args.agent),
       args.configArg,
       args.tx.pure.vector('u8', Array.from(args.configHash ?? new Uint8Array())),
