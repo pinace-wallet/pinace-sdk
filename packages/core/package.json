@@ -1,8 +1,11 @@
 {
   "name": "@pinace/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Pinace core SDK — types, PTB builders, read client, and policy helpers for the on-chain delegation protocol",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/pinace-wallet/pinace-sdk.git",

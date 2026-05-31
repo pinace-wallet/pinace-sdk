@@ -1,23 +1,29 @@
 name: Release
 
+# Auto-bump @pinace/core minor version + publish to npm on every push to main.
+# Skips itself when the commit message starts with "chore: release" (avoids loop).
+
 on:
-  workflow_dispatch:  # manual trigger only — reactivate auto-on-push when ready to publish v0.0.1
+  push:
+    branches:
+      - main
 
 concurrency: release-${{ github.ref }}
 
 jobs:
   release:
-    name: Publish via Changesets
+    name: Auto-publish @pinace/core
     runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'chore: release')"
     permissions:
       contents: write
-      pull-requests: write
       id-token: write
     steps:
-      - name: Checkout
+      - name: Checkout (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -29,19 +35,41 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
+      - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
         run: pnpm build
 
-      - name: Create release PR or publish
-        uses: changesets/action@v1
-        with:
-          publish: pnpm release
-          version: pnpm version-packages
-          commit: "chore: version packages"
-          title: "chore: version packages"
+      - name: Bump @pinace/core minor version (+0.1.0)
+        id: bump
+        working-directory: packages/core
+        run: |
+          npm version minor --no-git-tag-version
+          new_version=$(node -p "require('./package.json').version")
+          echo "version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "Bumped to v$new_version"
+
+      - name: Publish to npm
+        working-directory: packages/core
+        run: npm publish --access public
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Commit version bump back to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/core/package.json
+          git commit -m "chore: release @pinace/core v${{ steps.bump.outputs.version }}"
+          git tag "core-v${{ steps.bump.outputs.version }}"
+          git push origin main --follow-tags
