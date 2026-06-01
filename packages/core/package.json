@@ -1,7 +1,7 @@
 {
   "name": "@pinace/core",
   "version": "0.3.0",
-  "description": "Pinace core SDK — types, PTB builders, read client, and policy helpers for the on-chain delegation protocol",
+  "description": "Pinace core SDK for Sui",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
