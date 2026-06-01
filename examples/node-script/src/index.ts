@@ -33,7 +33,6 @@ import {
   buildSettleAction,
   PACKAGE_IDS,
   PinaceClient,
-  POLICY_REGISTRATION_IDS,
 } from '@pinace/core';
 import * as policies from '@pinace/core/policies';
 
@@ -137,7 +136,6 @@ async function main(): Promise<void> {
     agent: agent.toSuiAddress(),
     witnessType: policies.spendingLimit.witnessType(packageId),
     configType: policies.spendingLimit.configType(packageId),
-    registrationId: POLICY_REGISTRATION_IDS.testnet.spendingLimit,
     configArg: slConfig,
     configHash: new TextEncoder().encode('e2e-sl'),
     marketplaceId: new TextEncoder().encode('local'),
@@ -157,7 +155,6 @@ async function main(): Promise<void> {
     agent: agent.toSuiAddress(),
     witnessType: policies.tokenWhitelist.witnessType(packageId),
     configType: policies.tokenWhitelist.configType(packageId),
-    registrationId: POLICY_REGISTRATION_IDS.testnet.tokenWhitelist,
     configArg: twConfig,
     configHash: new TextEncoder().encode('e2e-tw'),
     marketplaceId: new TextEncoder().encode('local'),

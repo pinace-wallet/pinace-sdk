@@ -1,5 +1,5 @@
+import { balancePool } from '@pinace/contracts-sdk';
 import type { Transaction } from '@mysten/sui/transactions';
-import { PinaceModules } from '../constants.js';
 
 /**
  * Connect an agent to a pool with an optional expiry (Unix ms; 0 = no expiry).
@@ -11,18 +11,14 @@ export function buildConnectAgent(args: {
   packageId: string;
   poolId: string;
   agent: string;
-  expiresMs: bigint | number | string;
-  clockId?: string;
+  expiresMs: bigint | number;
 }): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::connect_agent`,
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.address(args.agent),
-      args.tx.pure.u64(args.expiresMs),
-      args.tx.object(args.clockId ?? '0x6'),
-    ],
-  });
+  args.tx.add(
+    balancePool.connectAgent({
+      package: args.packageId,
+      arguments: [args.poolId, args.agent, args.expiresMs],
+    }),
+  );
   return args.tx;
 }
 
@@ -37,16 +33,12 @@ export function buildRevokeAgent(args: {
   poolId: string;
   agent: string;
   reason?: Uint8Array;
-  clockId?: string;
 }): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::revoke_agent`,
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.address(args.agent),
-      args.tx.pure.vector('u8', Array.from(args.reason ?? new Uint8Array())),
-      args.tx.object(args.clockId ?? '0x6'),
-    ],
-  });
+  args.tx.add(
+    balancePool.revokeAgent({
+      package: args.packageId,
+      arguments: [args.poolId, args.agent, Array.from(args.reason ?? new Uint8Array())],
+    }),
+  );
   return args.tx;
 }

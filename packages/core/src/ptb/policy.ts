@@ -1,5 +1,8 @@
+import { balancePool } from '@pinace/contracts-sdk';
 import type { Transaction, TransactionArgument } from '@mysten/sui/transactions';
-import { PinaceModules } from '../constants.js';
+import { bcs, type BcsType } from '@mysten/sui/bcs';
+
+const ANY_CONFIG: BcsType<unknown> = bcs.bytes(0) as unknown as BcsType<unknown>;
 
 /**
  * Generic `attach_policy<Witness, Config>` PTB builder.
@@ -7,9 +10,8 @@ import { PinaceModules } from '../constants.js';
  * Each policy module exposes its own `Witness` type + `Config` type. To attach a
  * policy you:
  *   1. Build a `Config` value (typically via `<policy>::new_config(...)` Move call).
- *   2. Call this helper with the witness type-arg, config type-arg, the matching
- *      `PolicyRegistration<Witness>` shared object id (gating which policies the
- *      protocol trusts), and the config `TransactionArgument` produced by step 1.
+ *   2. Call this helper with the witness type-arg, config type-arg, and the config
+ *      `TransactionArgument` produced by step 1.
  *
  * `configHash` and `marketplaceId` are off-chain metadata stored verbatim; pass empty
  * vectors when you don't have a marketplace listing yet.
@@ -18,28 +20,26 @@ export function buildAttachPolicy(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
-  registrationId: string;
   agent: string;
   witnessType: string;
   configType: string;
   configArg: TransactionArgument;
   configHash?: Uint8Array;
   marketplaceId?: Uint8Array;
-  clockId?: string;
 }): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::attach_policy`,
-    typeArguments: [args.witnessType, args.configType],
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.object(args.registrationId),
-      args.tx.pure.address(args.agent),
-      args.configArg,
-      args.tx.pure.vector('u8', Array.from(args.configHash ?? new Uint8Array())),
-      args.tx.pure.vector('u8', Array.from(args.marketplaceId ?? new Uint8Array())),
-      args.tx.object(args.clockId ?? '0x6'),
-    ],
-  });
+  args.tx.add(
+    balancePool.attachPolicy<typeof ANY_CONFIG>({
+      package: args.packageId,
+      arguments: [
+        args.poolId,
+        args.agent,
+        args.configArg,
+        Array.from(args.configHash ?? new Uint8Array()),
+        Array.from(args.marketplaceId ?? new Uint8Array()),
+      ],
+      typeArguments: [args.witnessType, args.configType],
+    }),
+  );
   return args.tx;
 }
 
@@ -56,20 +56,20 @@ export function buildUpdatePolicy(args: {
   configArg: TransactionArgument;
   configHash?: Uint8Array;
   marketplaceId?: Uint8Array;
-  clockId?: string;
 }): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::update_policy`,
-    typeArguments: [args.witnessType, args.configType],
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.address(args.agent),
-      args.configArg,
-      args.tx.pure.vector('u8', Array.from(args.configHash ?? new Uint8Array())),
-      args.tx.pure.vector('u8', Array.from(args.marketplaceId ?? new Uint8Array())),
-      args.tx.object(args.clockId ?? '0x6'),
-    ],
-  });
+  args.tx.add(
+    balancePool.updatePolicy<typeof ANY_CONFIG>({
+      package: args.packageId,
+      arguments: [
+        args.poolId,
+        args.agent,
+        args.configArg,
+        Array.from(args.configHash ?? new Uint8Array()),
+        Array.from(args.marketplaceId ?? new Uint8Array()),
+      ],
+      typeArguments: [args.witnessType, args.configType],
+    }),
+  );
   return args.tx;
 }
 
@@ -83,16 +83,13 @@ export function buildRemovePolicy(args: {
   agent: string;
   witnessType: string;
   configType: string;
-  clockId?: string;
 }): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::remove_policy`,
-    typeArguments: [args.witnessType, args.configType],
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.address(args.agent),
-      args.tx.object(args.clockId ?? '0x6'),
-    ],
-  });
+  args.tx.add(
+    balancePool.removePolicy({
+      package: args.packageId,
+      arguments: [args.poolId, args.agent],
+      typeArguments: [args.witnessType, args.configType],
+    }),
+  );
   return args.tx;
 }

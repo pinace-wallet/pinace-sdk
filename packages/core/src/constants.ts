@@ -49,32 +49,12 @@ export const ActionLimits = {
  * Deployed `core` package IDs per network. Pass into `PinaceClient` config.
  */
 export const PACKAGE_IDS = {
-  testnet: '0x8f7acde213fb19211b0dcd3a6527a4847d2f3631d90267880dd198291ab70fdf',
+  testnet: '0x48fe6e060674e81288375a770fc4ad3022d2ca07ea28fb77b3d8ecfb8c115c04',
   mainnet: '0x0', // not deployed yet
 } as const;
 
 /** Convenience default. Use `PACKAGE_IDS.testnet` or `PACKAGE_IDS.mainnet` explicitly in production code. */
 export const DEFAULT_PACKAGE_ID = PACKAGE_IDS.testnet;
-
-/**
- * Shared `PolicyRegistration<Witness>` object IDs created when the package was
- * published. Each entry gates whether the policy is trusted by the protocol —
- * `attach_policy` requires the registration object that matches the witness type.
- */
-export const POLICY_REGISTRATION_IDS = {
-  testnet: {
-    spendingLimit: '0x463fa83bb908fcdf989cdc648cfb0448dbe46828d50718dbbfae9c73edcd55c4',
-    tokenWhitelist: '0xc667b1d21ae62373074b4d291db78b2a078c5e39d683bb9e7f389831084ec16b',
-    slippageGuard: '0x1b9deed2739f6e7c0a00ff9911d09521adbe2c5d4d8f49a71ed486004dcad12e',
-    timeWindow: '0x2c7435c67fd0760424606e15c3faa79a2b4740e000ad2c5ae3619974581be4fb',
-  },
-  mainnet: {
-    spendingLimit: '0x0',
-    tokenWhitelist: '0x0',
-    slippageGuard: '0x0',
-    timeWindow: '0x0',
-  },
-} as const;
 
 /**
  * Move module fully-qualified names for common targets.

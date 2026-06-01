@@ -1,5 +1,6 @@
-import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
-import { type ActionKind, PinaceModules } from '../constants.js';
+import { balancePool } from '@pinace/contracts-sdk';
+import type { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
+import type { ActionKind } from '../constants.js';
 
 /**
  * Begin the hot-potato flow: `balance_pool::propose_action` returns a `Request` object
@@ -15,29 +16,29 @@ export function buildProposeAction(args: {
   coinInType: string;
   coinOutType: string;
   kind: ActionKind;
-  amountIn: bigint | number | string;
-  quotedAmountOut: bigint | number | string;
-  minAmountOut: bigint | number | string;
-  deadlineMs: bigint | number | string;
+  amountIn: bigint | number;
+  quotedAmountOut: bigint | number;
+  minAmountOut: bigint | number;
+  deadlineMs: bigint | number;
   routeHash: Uint8Array;
   memo: string;
-  clockId?: string;
 }): TransactionResult {
-  return args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::propose_action`,
-    typeArguments: [args.coinInType, args.coinOutType],
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.u8(args.kind),
-      args.tx.pure.u64(args.amountIn),
-      args.tx.pure.u64(args.quotedAmountOut),
-      args.tx.pure.u64(args.minAmountOut),
-      args.tx.pure.u64(args.deadlineMs),
-      args.tx.pure.vector('u8', Array.from(args.routeHash)),
-      args.tx.pure.string(args.memo),
-      args.tx.object(args.clockId ?? '0x6'),
-    ],
-  });
+  return args.tx.add(
+    balancePool.proposeAction({
+      package: args.packageId,
+      arguments: [
+        args.poolId,
+        args.kind,
+        args.amountIn,
+        args.quotedAmountOut,
+        args.minAmountOut,
+        args.deadlineMs,
+        Array.from(args.routeHash),
+        args.memo,
+      ],
+      typeArguments: [args.coinInType, args.coinOutType],
+    }),
+  );
 }
 
 /**
@@ -50,12 +51,13 @@ export function buildSettleAction(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
-  request: TransactionResult;
-  clockId?: string;
+  request: TransactionArgument;
 }): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::settle_action`,
-    arguments: [args.tx.object(args.poolId), args.request, args.tx.object(args.clockId ?? '0x6')],
-  });
+  args.tx.add(
+    balancePool.settleAction({
+      package: args.packageId,
+      arguments: [args.poolId, args.request],
+    }),
+  );
   return args.tx;
 }

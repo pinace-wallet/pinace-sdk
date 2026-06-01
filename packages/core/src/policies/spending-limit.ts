@@ -1,3 +1,4 @@
+import { spendingLimitPolicy } from '@pinace/contracts-sdk';
 import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
 import type { PolicyInstance } from './instance.js';
 
@@ -14,9 +15,9 @@ export function configType(packageId: string): string {
 }
 
 export interface SpendingLimitConfig {
-  maxPerTx: bigint | number | string;
-  maxPerWindow: bigint | number | string;
-  windowMs: bigint | number | string;
+  maxPerTx: bigint | number;
+  maxPerWindow: bigint | number;
+  windowMs: bigint | number;
 }
 
 export function buildNewConfig(args: {
@@ -24,14 +25,12 @@ export function buildNewConfig(args: {
   packageId: string;
   config: SpendingLimitConfig;
 }): TransactionResult {
-  return args.tx.moveCall({
-    target: `${args.packageId}::${moduleName}::new_config`,
-    arguments: [
-      args.tx.pure.u64(args.config.maxPerTx),
-      args.tx.pure.u64(args.config.maxPerWindow),
-      args.tx.pure.u64(args.config.windowMs),
-    ],
-  });
+  return args.tx.add(
+    spendingLimitPolicy.newConfig({
+      package: args.packageId,
+      arguments: [args.config.maxPerTx, args.config.maxPerWindow, args.config.windowMs],
+    }),
+  );
 }
 
 export function policyInstance(packageId: string): PolicyInstance {

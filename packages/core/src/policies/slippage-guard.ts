@@ -1,3 +1,4 @@
+import { slippageGuardPolicy } from '@pinace/contracts-sdk';
 import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
 import type { PolicyInstance } from './instance.js';
 
@@ -14,7 +15,7 @@ export function configType(packageId: string): string {
 }
 
 export interface SlippageGuardConfig {
-  maxSlippageBps: bigint | number | string;
+  maxSlippageBps: bigint | number;
 }
 
 export function buildNewConfig(args: {
@@ -22,10 +23,12 @@ export function buildNewConfig(args: {
   packageId: string;
   config: SlippageGuardConfig;
 }): TransactionResult {
-  return args.tx.moveCall({
-    target: `${args.packageId}::${moduleName}::new_config`,
-    arguments: [args.tx.pure.u64(args.config.maxSlippageBps)],
-  });
+  return args.tx.add(
+    slippageGuardPolicy.newConfig({
+      package: args.packageId,
+      arguments: [args.config.maxSlippageBps],
+    }),
+  );
 }
 
 export function policyInstance(packageId: string): PolicyInstance {

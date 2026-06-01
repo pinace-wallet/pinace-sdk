@@ -1,5 +1,5 @@
+import { balancePool } from '@pinace/contracts-sdk';
 import type { Transaction, TransactionObjectArgument } from '@mysten/sui/transactions';
-import { PinaceModules } from '../constants.js';
 
 /**
  * Build the `balance_pool::create` call into an existing transaction.
@@ -8,14 +8,8 @@ import { PinaceModules } from '../constants.js';
  * id is not available synchronously — extract it from the on-chain effects
  * after submission, or subscribe to `PoolCreatedEvent`.
  */
-export function buildCreatePool(args: {
-  tx: Transaction;
-  packageId: string;
-}): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::create`,
-    arguments: [],
-  });
+export function buildCreatePool(args: { tx: Transaction; packageId: string }): Transaction {
+  args.tx.add(balancePool.create({ package: args.packageId }));
   return args.tx;
 }
 
@@ -33,35 +27,36 @@ export function buildDeposit(args: {
   /** Coin to escrow — either an object id string, an `object()` arg, or a `splitCoins()[i]` result. */
   coinArg: TransactionObjectArgument | string;
 }): Transaction {
-  const coin =
-    typeof args.coinArg === 'string' ? args.tx.object(args.coinArg) : args.coinArg;
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::deposit`,
-    typeArguments: [args.coinType],
-    arguments: [args.tx.object(args.poolId), coin],
-  });
+  args.tx.add(
+    balancePool.deposit({
+      package: args.packageId,
+      arguments: [args.poolId, args.coinArg],
+      typeArguments: [args.coinType],
+    }),
+  );
   return args.tx;
 }
 
 /**
  * Build a `balance_pool::owner_withdraw<T>` call — only callable by the pool owner.
+ * Move returns a `Coin<T>` to the caller; this wrapper auto-transfers it to `recipient`
+ * within the same PTB. Pass the owner's address (or any address you want to fund).
  */
 export function buildOwnerWithdraw(args: {
   tx: Transaction;
   packageId: string;
   poolId: string;
   coinType: string;
-  amount: bigint | number | string;
+  amount: bigint | number;
   recipient: string;
 }): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${PinaceModules.BalancePool}::owner_withdraw`,
-    typeArguments: [args.coinType],
-    arguments: [
-      args.tx.object(args.poolId),
-      args.tx.pure.u64(args.amount),
-      args.tx.pure.address(args.recipient),
-    ],
-  });
+  const coin = args.tx.add(
+    balancePool.ownerWithdraw({
+      package: args.packageId,
+      arguments: [args.poolId, args.amount],
+      typeArguments: [args.coinType],
+    }),
+  );
+  args.tx.transferObjects([coin], args.tx.pure.address(args.recipient));
   return args.tx;
 }
