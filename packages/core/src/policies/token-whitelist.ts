@@ -1,6 +1,5 @@
-import type { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
-
-/** Helpers for `core::token_whitelist_policy`. */
+import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
+import type { PolicyInstance } from './instance.js';
 
 export const moduleName = 'token_whitelist_policy';
 export const witnessName = 'Witness';
@@ -15,18 +14,10 @@ export function configType(packageId: string): string {
 }
 
 export interface TokenWhitelistConfig {
-  /** Fully-qualified TypeNames the agent may use as `coin_in`. */
   allowedInputs: string[];
-  /** Fully-qualified TypeNames the agent may use as `coin_out`. */
   allowedOutputs: string[];
 }
 
-/**
- * `token_whitelist_policy::new_config(allowed_inputs, allowed_outputs)`.
- *
- * Type-name vectors must be the fully-qualified module path of each coin,
- * e.g. `'0x2::sui::SUI'`.
- */
 export function buildNewConfig(args: {
   tx: Transaction;
   packageId: string;
@@ -41,10 +32,6 @@ export function buildNewConfig(args: {
   });
 }
 
-/**
- * Convenience helper for the common case: whitelist a single (TIn, TOut) pair via
- * `token_whitelist_policy::new_pair_config<TIn, TOut>()`.
- */
 export function buildNewPairConfig(args: {
   tx: Transaction;
   packageId: string;
@@ -58,18 +45,6 @@ export function buildNewPairConfig(args: {
   });
 }
 
-/**
- * `token_whitelist_policy::prove(pool: &BalancePool, request: &mut Request)`.
- */
-export function buildProve(args: {
-  tx: Transaction;
-  packageId: string;
-  poolId: string;
-  request: TransactionArgument | TransactionResult;
-}): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${moduleName}::prove`,
-    arguments: [args.tx.object(args.poolId), args.request],
-  });
-  return args.tx;
+export function policyInstance(packageId: string): PolicyInstance {
+  return { packageId, module: moduleName };
 }

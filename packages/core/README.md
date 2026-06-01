@@ -102,11 +102,8 @@ await suiClient.signAndExecuteTransaction({ signer: owner, transaction: tx });
 ### 3. Agent proposes + settles an action (atomic PTB)
 
 ```ts
-import {
-  ActionKind,
-  buildProposeAction,
-  buildSettleAction,
-} from '@pinace/core';
+import { ActionKind, buildProposeAction, buildSettleAction } from '@pinace/core';
+import { buildPolicyProves, spendingLimit, tokenWhitelist } from '@pinace/core/policies';
 
 const tx = new Transaction();
 const request = buildProposeAction({
@@ -124,12 +121,43 @@ const request = buildProposeAction({
   memo: 'demo',
 });
 
-// Insert every required policy prove between propose and settle:
-policies.spendingLimit.buildProve({ tx, packageId: PACKAGE_IDS.testnet, poolId, request });
+buildPolicyProves({
+  tx,
+  poolId,
+  request,
+  policies: [
+    spendingLimit.policyInstance(PACKAGE_IDS.testnet),
+    tokenWhitelist.policyInstance(PACKAGE_IDS.testnet),
+  ],
+});
 
 buildSettleAction({ tx, packageId: PACKAGE_IDS.testnet, poolId, request });
 
 await suiClient.signAndExecuteTransaction({ signer: agent, transaction: tx });
+```
+
+#### Plugging in a custom policy contract
+
+Any policy module that exposes `public fun prove(pool, request, ...)` works with `buildPolicyProves` — just describe it as a `PolicyInstance`:
+
+```ts
+import { buildPolicyProves, type PolicyInstance } from '@pinace/core/policies';
+
+const myWhitelistPolicy: PolicyInstance = {
+  packageId: '0xMY_CUSTOM_POLICY_PKG',
+  module: 'address_whitelist_policy',
+  needsClock: false,
+};
+
+buildPolicyProves({
+  tx,
+  poolId,
+  request,
+  policies: [
+    spendingLimit.policyInstance(PACKAGE_IDS.testnet),
+    myWhitelistPolicy,
+  ],
+});
 ```
 
 ### 4. Revoke an agent (1-click hero demo)

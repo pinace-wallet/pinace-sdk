@@ -2,9 +2,7 @@ import type { SuiGrpcClient } from '@mysten/sui/grpc';
 import type { Signer } from '@mysten/sui/cryptography';
 import { Transaction } from '@mysten/sui/transactions';
 import { ActionKind, buildProposeAction, buildSettleAction, PinaceClient } from '@pinace/core';
-import * as policies from '@pinace/core/policies';
-
-export type PolicyName = 'spendingLimit' | 'tokenWhitelist' | 'slippageGuard' | 'timeWindow';
+import { buildPolicyProves, type PolicyInstance } from '@pinace/core/policies';
 
 export interface PinaceAgentConfig {
   suiClient: SuiGrpcClient;
@@ -23,16 +21,9 @@ export interface ProposeAndSettleArgs {
   deadlineMs: bigint;
   routeHash?: Uint8Array;
   memo?: string;
-  /** Names of policies the agent's delegation has attached. Each one's `prove` call gets inserted between propose and settle. */
-  policies: PolicyName[];
+  policies: PolicyInstance[];
 }
 
-/**
- * High-level entry point for an AI agent runtime.
- *
- * Wraps the hot-potato `propose_action → policy proves → settle_action` PTB so callers
- * don't have to assemble it by hand.
- */
 export class PinaceAgent {
   readonly suiClient: SuiGrpcClient;
   readonly signer: Signer;
@@ -51,10 +42,6 @@ export class PinaceAgent {
     });
   }
 
-  /**
-   * Build, sign, and submit a single PTB that opens the hot-potato Request, calls every
-   * configured policy `prove` to attach receipts, then settles.
-   */
   async proposeAndSettle(args: ProposeAndSettleArgs) {
     const tx = new Transaction();
 
@@ -73,9 +60,12 @@ export class PinaceAgent {
       memo: args.memo ?? '',
     });
 
-    for (const policyName of args.policies) {
-      attachPolicyProve(tx, policyName, this.packageId, this.poolId, request);
-    }
+    buildPolicyProves({
+      tx,
+      poolId: this.poolId,
+      request,
+      policies: args.policies,
+    });
 
     buildSettleAction({ tx, packageId: this.packageId, poolId: this.poolId, request });
 
@@ -95,28 +85,5 @@ function mapKind(kind: ProposeAndSettleArgs['kind']): ActionKind {
       return ActionKind.Withdraw;
     case 'generic':
       return ActionKind.Generic;
-  }
-}
-
-function attachPolicyProve(
-  tx: Transaction,
-  policyName: PolicyName,
-  packageId: string,
-  poolId: string,
-  request: ReturnType<typeof buildProposeAction>,
-): void {
-  switch (policyName) {
-    case 'spendingLimit':
-      policies.spendingLimit.buildProve({ tx, packageId, poolId, request });
-      return;
-    case 'tokenWhitelist':
-      policies.tokenWhitelist.buildProve({ tx, packageId, poolId, request });
-      return;
-    case 'slippageGuard':
-      policies.slippageGuard.buildProve({ tx, packageId, poolId, request });
-      return;
-    case 'timeWindow':
-      policies.timeWindow.buildProve({ tx, packageId, poolId, request });
-      return;
   }
 }

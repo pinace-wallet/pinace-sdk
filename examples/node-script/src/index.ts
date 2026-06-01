@@ -190,8 +190,15 @@ async function main(): Promise<void> {
     routeHash: new Uint8Array(),
     memo: 'pinace e2e test',
   });
-  policies.spendingLimit.buildProve({ tx: actionTx, packageId, poolId, request });
-  policies.tokenWhitelist.buildProve({ tx: actionTx, packageId, poolId, request });
+  policies.buildPolicyProves({
+    tx: actionTx,
+    poolId,
+    request,
+    policies: [
+      policies.spendingLimit.policyInstance(packageId),
+      policies.tokenWhitelist.policyInstance(packageId),
+    ],
+  });
   buildSettleAction({ tx: actionTx, packageId, poolId, request });
 
   const actionResult = await suiClient.signAndExecuteTransaction({

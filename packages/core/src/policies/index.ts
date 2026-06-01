@@ -1,3 +1,4 @@
+export * from './instance.js';
 export * as spendingLimit from './spending-limit.js';
 export * as tokenWhitelist from './token-whitelist.js';
 export * as slippageGuard from './slippage-guard.js';

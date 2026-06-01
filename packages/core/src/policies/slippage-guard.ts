@@ -1,6 +1,5 @@
-import type { Transaction, TransactionArgument, TransactionResult } from '@mysten/sui/transactions';
-
-/** Helpers for `core::slippage_guard_policy`. */
+import type { Transaction, TransactionResult } from '@mysten/sui/transactions';
+import type { PolicyInstance } from './instance.js';
 
 export const moduleName = 'slippage_guard_policy';
 export const witnessName = 'Witness';
@@ -15,13 +14,9 @@ export function configType(packageId: string): string {
 }
 
 export interface SlippageGuardConfig {
-  /** Max acceptable slippage in basis points (1 bp = 0.01%). */
   maxSlippageBps: bigint | number | string;
 }
 
-/**
- * `slippage_guard_policy::new_config(max_slippage_bps)`.
- */
 export function buildNewConfig(args: {
   tx: Transaction;
   packageId: string;
@@ -33,18 +28,6 @@ export function buildNewConfig(args: {
   });
 }
 
-/**
- * `slippage_guard_policy::prove(pool: &BalancePool, request: &mut Request)`.
- */
-export function buildProve(args: {
-  tx: Transaction;
-  packageId: string;
-  poolId: string;
-  request: TransactionArgument | TransactionResult;
-}): Transaction {
-  args.tx.moveCall({
-    target: `${args.packageId}::${moduleName}::prove`,
-    arguments: [args.tx.object(args.poolId), args.request],
-  });
-  return args.tx;
+export function policyInstance(packageId: string): PolicyInstance {
+  return { packageId, module: moduleName };
 }
