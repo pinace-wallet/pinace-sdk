@@ -13,7 +13,6 @@ TypeScript SDK for the Pinace agent delegation protocol on Sui.
 
 | Example | Description |
 |---|---|
-| [`examples/mcp-server`](./examples/mcp-server) | MCP server exposing Pinace agent actions as LLM tools |
 | [`examples/node-script`](./examples/node-script) | Minimal Node script: create pool → attach agent → propose action → settle |
 
 ## Prerequisites
