@@ -49,7 +49,7 @@ export const ActionLimits = {
  * Deployed `core` package IDs per network. Pass into `PinaceClient` config.
  */
 export const PACKAGE_IDS = {
-  testnet: '0x48fe6e060674e81288375a770fc4ad3022d2ca07ea28fb77b3d8ecfb8c115c04',
+  testnet: '0x5be5ab0292590e61e2dc21d11cc7174970f48e5ff54c88d4797c81b2a751a23b',
   mainnet: '0x0', // not deployed yet
 } as const;
 

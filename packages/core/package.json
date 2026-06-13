@@ -54,7 +54,7 @@
     "@mysten/sui": "^2.17.0"
   },
   "dependencies": {
-    "@pinace/contracts-sdk": "^0.1.0"
+    "@pinace/contracts-sdk": "^0.2.0"
   },
   "devDependencies": {
     "@mysten/sui": "^2.17.0",

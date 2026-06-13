@@ -71,8 +71,8 @@ importers:
   packages/core:
     dependencies:
       '@pinace/contracts-sdk':
-        specifier: ^0.1.0
-        version: 0.1.0(typescript@5.9.3)
+        specifier: ^0.2.0
+        version: 0.2.0(typescript@5.9.3)
     devDependencies:
       '@mysten/sui':
         specifier: ^2.17.0
@@ -751,8 +751,8 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@pinace/contracts-sdk@0.1.0':
-    resolution: {integrity: sha512-a7yVsaQ0CllTViXnKwTanHfOvAPYXo0y75vOzQ83aDA6TnJDYVxOYzPddogsW2MhuEEF98urW4YdR0vzy2Y9ww==}
+  '@pinace/contracts-sdk@0.2.0':
+    resolution: {integrity: sha512-ww302XFRj4kUjFzETc7MueKcTWJ9hDrWmPi9cTehFHpkMkeCndsUz8eXME9JnWrcB8jbX2xXMeSTRIbMDVlEYg==}
 
   '@protobuf-ts/grpcweb-transport@2.11.1':
     resolution: {integrity: sha512-1W4utDdvOB+RHMFQ0soL4JdnxjXV+ddeGIUg08DvZrA8Ms6k5NN6GBFU2oHZdTOcJVpPrDJ02RJlqtaoCMNBtw==}
@@ -2145,7 +2145,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.20.1
 
-  '@pinace/contracts-sdk@0.1.0(typescript@5.9.3)':
+  '@pinace/contracts-sdk@0.2.0(typescript@5.9.3)':
     dependencies:
       '@mysten/bcs': 2.0.5
       '@mysten/sui': 2.17.0(typescript@5.9.3)
