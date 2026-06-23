@@ -1,19 +1,32 @@
 # Pinace SDK
 
-TypeScript SDK for the Pinace agent delegation protocol on Sui.
+TypeScript SDK for the [Pinace](https://pinace.xyz) agent-delegation protocol on Sui.
+
+- **Move package** (testnet): `0x5be5ab02…2a751a23b`
+- **npm**: [`@pinace/core`](https://www.npmjs.com/package/@pinace/core) v0.5
 
 ## Packages
 
-| Package | Description |
+| Package | What it gives you |
 |---|---|
-| [`@pinace/core`](./packages/core) | Foundation — TypeScript types mirroring Move structs, PTB builders, read client, policy helpers |
-| [`@pinace/agent-sdk`](./packages/agent-sdk) | Developer surface for building AI agents that execute bounded actions through Pinace |
+| [`@pinace/core`](./packages/core) | TypeScript types mirroring Move structs · PTB builders · read client · policy helpers |
+| [`@pinace/agent-sdk`](./packages/agent-sdk) | Higher-level surface for AI agents that execute bounded actions through Pinace |
 
 ## Examples
 
-| Example | Description |
+| Example | What it does |
 |---|---|
 | [`examples/node-script`](./examples/node-script) | Minimal Node script: create pool → attach agent → propose action → settle |
+
+## Hot-potato PTB shape
+
+Every action is one atomic PTB; the `Request` must be consumed in the same tx or the whole thing reverts.
+
+```
+propose_action → policy.prove → take_coin → venue::call → return_coin → settle
+```
+
+`@pinace/core` exposes builders for each leg — see [`packages/core/README.md`](./packages/core/README.md) for the full surface.
 
 ## Prerequisites
 
@@ -32,20 +45,15 @@ pnpm test
 ## Development
 
 ```bash
-# Run all packages in watch mode
-pnpm dev
-
-# Lint + format
+pnpm dev         # watch mode, all packages
 pnpm lint
 pnpm format
-
-# Manual version bump (only needed if you want a major/patch instead of the default minor)
-pnpm changeset
+pnpm changeset   # only when overriding the default minor bump
 ```
 
 ## Architecture
 
-Pinace SDK wraps the on-chain delegation protocol defined in [`pinace-wallet/contracts`](https://github.com/pinace-wallet/contracts). Refer to that repository for the Move contract design.
+Wraps the on-chain delegation protocol defined in [`pinace-wallet/contracts`](https://github.com/pinace-wallet/contracts). See that repo for the Move design.
 
 ## License
 
