@@ -7,10 +7,10 @@ TypeScript SDK for the [Pinace](https://pinace.xyz) agent-delegation protocol on
 
 ## Packages
 
-| Package | What it gives you |
-|---|---|
-| [`@pinace/core`](./packages/core) | TypeScript types mirroring Move structs · PTB builders · read client · policy helpers |
-| [`@pinace/agent-sdk`](./packages/agent-sdk) | Higher-level surface for AI agents that execute bounded actions through Pinace |
+| Package | What it gives you | Status |
+|---|---|---|
+| [`@pinace/core`](./packages/core) | TypeScript types mirroring Move structs · PTB builders · read client · policy helpers | ✅ npm v0.5 |
+| [`@pinace/agent-sdk`](./packages/agent-sdk) | Higher-level surface for AI agents that execute bounded actions through Pinace | 🛠 experimental, not yet published |
 
 ## Examples
 
